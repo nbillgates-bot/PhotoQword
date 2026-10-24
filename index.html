@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  PhotoQword
+
+  Copyright (c) 2026 Richard Tong
+  Website: https://www.qword.com
+  Email: nbillgates@gmail.com
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      不写这一行浏览器就去要 /favicon.ico，而我们只有 svg，于是每次打开
+      控制台都挂一条 404。加上之后控制台是干净的，「无报错」才能当验证项用。
+      不写 maximum-scale：iOS 10 以后不认它，挡不住聚焦缩放；那一头靠输入框
+      字号 ≥16px 解决（见 styles/globals.css 的 --touch-input-font）。
+    -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content="Qword ps online - 在线图像编辑器：图层、选区、画笔、滤镜与调整，全部在浏览器本地运行。" />
+    <title>Qword PS Online</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+/*
+ * 底部升起的临时面板。只在窄屏用，说明见 BottomSheet.tsx。
+ *
+ * z-index 250：要压过抽屉（60）与画布区内部的一切，但低于菜单下拉（200）之上的
+ * 对话框遮罩……实际上要低于 Toast 与进度窗。这里取 250，与 ContextMenu 同级之上，
+ * 因为工具面板本身也可能被右键菜单盖 —— 但在窄屏上不存在右键，取 250 够用。
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  /* 最多占八成屏高，剩下的留给背景可见 —— 让人看出这是浮层，点外面能关 */
+  max-height: 80vh;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  outline: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  /* 同抽屉：挡住 iOS 的橡皮筋把整块面板拽走 */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

@@ -1,0 +1,671 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+/* 基础控件样式，被 ui/ 下所有原子组件共用 */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  /*
+   * 这一行要能被压窄。父级给多少就用多少，不许靠内容把容器顶宽 ——
+   * 面板可以被拖到 44px，顶宽就会溢出到图标轨底下去。
+   */
+  min-width: 0;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.labelInline {
+  /*
+   * 默认原样显示，各处照旧。做成自定义属性是为了让个别行能把标签整个藏掉
+   * （目前只有窄屏的图层过滤栏这么干，理由见 Panels.module.css 那处注释）。
+   *
+   * 为什么不给 Select 加个 hideLabel 参数：CSS Module 的类名带哈希，别的模块
+   * 写 `.filterRow .labelInline` 编译出来的哈希对不上，选不中这里；而自定义
+   * 属性沿 DOM 继承，不受模块边界影响。加 flag 参数则违反规约 §1.3。
+   *
+   * 藏的只是视觉标签，<select> 上的 aria-label 照旧，无障碍名称不受影响（§5）。
+   */
+  display: var(--label-inline-display, inline);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 56px;
+  user-select: none;
+}
+
+/*
+ * fieldRow 里可伸缩的那一半必须显式写 min-width: 0。
+ *
+ * flex 项的 min-width 初值是 auto，即「不许小于内容的最小尺寸」，它
+ * **优先于** flex-shrink —— 所以光写 flex: 1 压不下去。原生 <select> 的
+ * 最小内容宽是最长那个 option（「线性光」/「Linear Light」），NumberInput
+ * 是写死的 58px，两个都顶得住不缩，于是把行顶宽、溢出到面板外。
+ *
+ * 只加 min-width，不动 flex 三值：有空间时终宽算法不受影响，桌面尺寸一字未变。
+ * 真正的折行在文件末尾的窄屏块里。
+ */
+.fieldRow > .select,
+.fieldRow > .sliderWrap,
+.sliderWrap > .slider {
+  min-width: 0;
+}
+
+/* ---------- Slider ---------- */
+.sliderWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-secondary);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid var(--bg-secondary);
+  cursor: grab;
+}
+
+.slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--bg-secondary);
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: grab;
+}
+
+/* ---------- NumberInput ---------- */
+.number {
+  width: 58px;
+  padding: 4px 6px;
+  /* 触屏下的字号与最小高度，见 globals.css 里那段 --touch-input-* 的说明 */
+  font-size: var(--touch-input-font, 12px);
+  min-height: var(--touch-input-height, 0);
+  text-align: right;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.number:focus {
+  border-color: var(--accent-primary);
+}
+
+.text {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: var(--touch-input-font, 13px);
+  min-height: var(--touch-input-height, 0);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.text:focus {
+  border-color: var(--accent-primary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 6px 8px;
+  /* 高度本来就有 72px，不用再取 --touch-input-height */
+  font-size: var(--touch-input-font, 13px);
+  line-height: 1.5;
+  resize: vertical;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.textarea:focus {
+  border-color: var(--accent-primary);
+}
+
+.unit {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- Select ---------- */
+.select {
+  padding: 5px 8px;
+  font-size: var(--touch-input-font, 12px);
+  min-height: var(--touch-input-height, 0);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex: 1;
+}
+
+.select:focus {
+  border-color: var(--accent-primary);
+}
+
+/* ---------- Button ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  transition: background 0.12s ease, border-color 0.12s ease;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(255, 82, 82, 0.12);
+}
+
+.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+/* ---------- IconButton ---------- */
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.iconButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.iconButtonActive {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+/* active 状态下不显示 hover 效果，保持按下的样子，不产生视觉混淆 */
+.iconButtonActive:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+/* ---------- Checkbox ---------- */
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+/* 置灰：仍然占位可见，只是点不动，与 PS 选项栏一致 */
+.checkboxDisabled {
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.checkboxDisabled input {
+  cursor: default;
+}
+
+/* ---------- SegmentedControl ---------- */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+.segment:hover {
+  color: var(--text-primary);
+}
+
+.segmentActive {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.segmentActive:hover {
+  color: #fff;
+}
+
+/* ---------- ColorSwatch ---------- */
+.swatch {
+  position: relative;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  /* 透明色也能看清，铺一层棋盘 */
+  background-image: linear-gradient(45deg, #666 25%, transparent 25%),
+    linear-gradient(-45deg, #666 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #666 75%),
+    linear-gradient(-45deg, transparent 75%, #666 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+.swatchFill {
+  position: absolute;
+  inset: 0;
+}
+
+.swatch:hover {
+  border-color: var(--accent-primary);
+}
+
+/* ---------- ContextMenu ---------- */
+/*
+ * fixed 定位：触发点在可滚动的面板里，
+ * 绝对定位会被 overflow: auto 裁掉（同工具栏 flyout 的坑）。
+ * 坐标由 JS 算，超出视口时翻转。
+ */
+.contextMenu {
+  position: fixed;
+  z-index: 120;
+  min-width: 176px;
+  padding: 3px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.contextItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contextItem:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.contextItem:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.contextLabel {
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* 快捷键提示靠右，字号小一号，与顶部菜单一致 */
+.contextShortcut {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.contextItem:hover:not(:disabled) .contextShortcut {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* 颜色标记项左侧的色块。透明值（"无"）靠描边示意 */
+.contextSwatch {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+}
+
+.contextSep {
+  height: 1px;
+  margin: 3px 6px;
+  background: var(--border-color);
+}
+
+/* 勾选位。恒占宽度，不然勾上/取消时后面的文字会左右跳 */
+.contextCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--accent-primary);
+}
+
+.contextHeading {
+  padding: 4px 10px 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- Modal ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  animation: fade 0.12s ease;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+  min-width: 320px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/*
+ * 标题栏是拖动把手。禁用文本选中，否则拖动时会顺手把标题选蓝；
+ * touch-action: none 是让触屏上的拖动不被浏览器的滚动手势抢走。
+ */
+.modalDragHandle {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.modalDragging {
+  cursor: grabbing;
+}
+
+.modalBody {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+/*
+ * 菜单高过视口时能滚。
+ *
+ * 与触屏无关，是个既有 bug：ContextMenu 翻转不过来就把 top 夹在 4px，
+ * 底下那几项直接被切掉，够不着。桌面上放得下的菜单不受影响。
+ */
+.contextMenu {
+  max-height: calc(100vh - 8px);
+  overflow-y: auto;
+}
+
+/* ====================================================================
+ * 粗指针（手指）覆盖
+ *
+ * 用 pointer 而不是 any-pointer：这里问的是「主要指针精不精确」。
+ * 插了鼠标的触屏笔记本答 fine，保持紧凑尺寸 —— 尺寸只能选一个，
+ * 有精确指针时就该按它来。手势层的挂载用的是另一套判定
+ * （engine/inputCapability.ts 的 any-pointer + 逐事件 pointerType）。
+ *
+ * 桌面端（pointer: fine）不进这个块，原尺寸一个字节都没动。
+ * ==================================================================== */
+@media (pointer: coarse) {
+  /* ---------- Slider ---------- */
+  .slider {
+    /*
+     * 命中区撑到 44px，但轨道看起来还是 4px：底色改用一条居中的渐变带来画。
+     * 不用 padding + background-clip —— Firefox 的轨道是独立伪元素，
+     * 撑高后两种画法会叠在一起。渐变画在元素自己的盒子上，各引擎一致。
+     */
+    height: var(--touch-target);
+    background: linear-gradient(var(--bg-secondary), var(--bg-secondary)) center / 100% 4px no-repeat;
+    /* inset 阴影会铺满整个 44px 的盒子，变成一大块灰底 */
+    box-shadow: none;
+    /* 不关掉的话在面板里拖滑块会被判成滚动面板，滑块反而不动 */
+    touch-action: none;
+  }
+
+  /* 渐变已经把轨道画好了，Firefox 自己那条要让开 */
+  .slider::-moz-range-track {
+    background: transparent;
+  }
+
+  .slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ---------- 文本类输入 ---------- */
+  /* 字号与高度走 --touch-input-*（见 globals.css），这里只补宽度：
+     16px 字号下 58px 装不下「100.5」这种三位带小数 */
+  .number {
+    width: 76px;
+  }
+
+  /* ---------- Button ---------- */
+  .button {
+    min-height: var(--touch-target);
+    padding: 6px 18px;
+  }
+
+  /* ---------- Checkbox ---------- */
+  /* 勾选框本体给到 22px，再靠整行 44px 把命中区补齐（文字也可点，label 包着） */
+  .checkbox {
+    min-height: var(--touch-target);
+  }
+
+  .checkbox input {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* ---------- SegmentedControl ---------- */
+  /* 外层有 2px padding，段高 40 才凑够 44 */
+  .segment {
+    min-height: 40px;
+    padding: 4px 14px;
+  }
+
+  /* ---------- ContextMenu ---------- */
+  /* 菜单项之间不留空隙，40px 已经够准，再高在 iPhone 横屏上会塞不下 */
+  .contextItem {
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  /* ---------- IconButton ---------- */
+  /*
+   * 26 → 44。它是全局共用的，撑大以后有四处容器装不下，都已就地改掉：
+   * 工具栏换/复位色那两个（Toolbar 的 .swapRow 改竖排）、
+   * 图层面板底部操作条（Panels 的 .layerToolbar 改换行）、
+   * 锁定栏与过滤栏那几个更小的覆盖（Panels 里用两级选择器重设，
+   * 免得和这条单类选择器拼打包顺序）、选项栏行高（EditorLayout 调高）。
+   * **以后再有新的调用点，先确认容器放不放得下 44px。**
+   */
+  .iconButton {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+
+  /* ---------- ColorSwatch ---------- */
+  /*
+   * 尺寸是调用方用内联 style 给的（ColorPicker 的 size prop），
+   * CSS 的 width 盖不过内联样式，但 min-width 是另一个属性，照样生效。
+   *
+   * 只给到 28px：工具栏那对前景/背景色是 PS 的双色块叠放，
+   * 外框被 52px 的工具栏列宽卡住，给不到 44。它不在高频路径上，先这样。
+   */
+  .swatch {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+/* ====================================================================
+ * 窄屏覆盖
+ *
+ * 断点 819 与 WIDE_LAYOUT_QUERY 的 820 互补（那边 min-width，这里 max-width）。
+ * ≥820px 一个字节都不改 —— 和上面那个粗指针块同一套做法。
+ *
+ * 治的是「标签 + 控件」这一行在窄面板里放不下：
+ * 面板体只有 119~165px 时，「不透明度」那一行的固定部分（标签 56 + 间距 8 +
+ * 数字框 76）就占掉 140，轨道只剩十来个像素，拖不动；「混合模式」的下拉则被
+ * 最长那个 option 顶宽，溢到图标轨底下。
+ *
+ * 手法是 flex-basis 当断点用：给可伸缩的那一半一个基准宽，放不下就 wrap 到
+ * 下一行独占整行。不用容器查询 —— 那会带上 contain: layout，把元素变成
+ * fixed 后代的包含块，正是 MenuBar 里踩过的坑。
+ * ==================================================================== */
+@media (max-width: 819px) {
+  .fieldRow {
+    flex-wrap: wrap;
+  }
+
+  /* 放不下 90px 的下拉就让它整条换行 */
+  .fieldRow > .select {
+    flex: 1 1 90px;
+  }
+
+  /* 轨道 + 数字框整块换行 */
+  .fieldRow > .sliderWrap {
+    flex: 1 1 110px;
+  }
+
+  /* 再往里一层：轨道保不住 80px 就把数字框挤到轨道下面 */
+  .sliderWrap {
+    flex-wrap: wrap;
+  }
+
+  .slider {
+    flex: 1 1 80px;
+  }
+}

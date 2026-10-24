@@ -1,0 +1,1278 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+/*
+ * 面板栏容器。内容由 Panels.tsx 决定：
+ * - 桌面 or 手机 PC 模式：<PanelsSplitView>（上下分栏）
+ * - 手机图标模式：<MobilePanelBar>（图标轨 + 浮层）
+ */
+.panels {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+/*
+ * 上下分栏视图（历史组 / 分隔条 / 图层组）。
+ *
+ * 中间行固定 4px（分隔条），上下两行按比例分配剩余空间。
+ * 必须先用 calc 减掉那 4px 再按比例分 —— 直接写
+ * `var(--ratio)fr 4px var(--ratio)fr` 会让 fr 把 4px 也算进可分配空间，
+ * 分隔条被撑到上百像素（实测 115px，就是这个 bug）。
+ */
+.splitView {
+  display: grid;
+  grid-template-rows:
+    calc((100% - 4px) * var(--history-ratio, 0.3))
+    4px
+    calc((100% - 4px) * var(--layers-ratio, 0.7));
+  height: 100%;
+}
+
+/* 一个停靠组 = 标签条 + 内容区。高度由 .splitView 的 grid 行控制 */
+.dockGroup {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.splitView > .dockGroup:last-child {
+  border-bottom: none;
+}
+
+.dockTabs {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dockTab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.dockTab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.dockTabActive {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.dockCollapse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  margin-left: auto;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.dockCollapse:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.dockBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/*
+ * 标题 + 右侧按钮组。
+ *
+ * wrap 写在基线而不是窄屏块里：它只在放不下时才生效，288px 的默认宽度下
+ * 永远不触发，所以桌面外观一字未变；而面板被拖到 44px 时（两颗 22px 的
+ * 撤销/重做加内边距就要 70px）能靠它把按钮折下去，不至于顶到面板外点不到。
+ */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* 同 .sectionHeader：wrap 只在放不下时生效，桌面默认宽度下不触发 */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.empty {
+  padding: var(--spacing-xl) var(--spacing-lg);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* ---------- 图层面板 ---------- */
+/* 图层面板：顶部控件 / 中间列表 / 底部操作条 三段式 */
+.layersPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.layerToolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 4px var(--spacing-sm);
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+}
+
+.toolbarGap {
+  flex: 1;
+}
+
+/* 图层拖到底部按钮上方时高亮，与 PS 一样给出「松手就生效」的确认感 */
+.dropHot {
+  border-color: var(--accent-primary);
+  background: rgba(74, 158, 255, 0.18);
+  color: var(--accent-primary);
+}
+
+.blendRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 列表自己滚动，底部操作条才能固定住 */
+.layerList {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--spacing-xs);
+  gap: 2px;
+}
+
+/*
+ * 紧凑单行：高度 26px。图层多的时候面板高度是稀缺资源，
+ * PS 的默认行也就这个量级。类型/不透明度收进 title，不占第二行。
+ */
+.layerItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* 给 .colorMarker 的绝对定位当参照 */
+  position: relative;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.12s ease;
+}
+
+.layerItem:hover {
+  background: var(--bg-tertiary);
+}
+
+.layerActive {
+  background: rgba(74, 158, 255, 0.16);
+  border-color: var(--accent-primary);
+}
+
+.layerActive:hover {
+  background: rgba(74, 158, 255, 0.22);
+}
+
+/*
+ * 多选里非活动的那些：底色比活动层浅且不描边。
+ * PS 也是这样区分「选中」和「当前编辑目标」的，只有活动层带亮框。
+ */
+.layerSelected {
+  background: rgba(74, 158, 255, 0.07);
+}
+
+.layerSelected:hover {
+  background: rgba(74, 158, 255, 0.13);
+}
+
+/*
+ * 颜色标记。绝对定位贴行左缘，不随嵌套缩进跑，
+ * 这样一列色条上下对齐，扫一眼就能分类。
+ * PS 是把眼睛那一整列染色，这里用色条，位置与语义一致。
+ */
+.colorMarker {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  bottom: 1px;
+  width: 3px;
+  border-radius: 2px 0 0 2px;
+  pointer-events: none;
+}
+
+/*
+ * 单独显示时被压住的图层，眼睛画成半透明。
+ *
+ * PS 的 Alt+点眼睛是真去改 visible，那些图层的眼睛直接变成闭眼。
+ * 我们不能改 visible（会被历史快照记进去，见 applySolo 的注释），
+ * 于是眼睛仍是睁着的，必须另给一个"当前没显示"的表现，
+ * 否则用户看到眼睛亮着但画面没这层，会以为是 bug。
+ */
+.eyeDimmed {
+  opacity: 0.3;
+}
+
+/* 剪贴组成员的下折箭头，与 PS 一样放在缩略图左侧 */
+.clipMark {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/*
+ * 行底边的剪贴热区。
+ *
+ * 只有按住 Alt 才响应点击（判断在 JS 里），平时不拦事件，
+ * 否则行底部 5px 点不中图层。cursor 用 alias 提示"建立关联"，
+ * PS 在这里显示的是它自制的剪贴光标，浏览器给不了自定义光标以外的等价物，
+ * 用标准光标里语义最接近的一个。
+ */
+.clipHotzone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 5px;
+  z-index: 1;
+}
+
+.clipHotzone:hover {
+  cursor: alias;
+}
+
+/* 拖拽排序时的落点指示 */
+.dropBefore {
+  box-shadow: inset 0 2px 0 var(--accent-primary);
+}
+
+.dropAfter {
+  box-shadow: inset 0 -2px 0 var(--accent-primary);
+}
+
+/* 拖到组行正中：整行描边，表示"放进这个组里"而不是插到前后 */
+.dropInside {
+  box-shadow: inset 0 0 0 2px var(--accent-primary);
+}
+
+/*
+ * 列表末尾的落点区：组里的图层要能拖回最外层最底部。
+ * 没有这块区域时，最底那行本身在组内，往它下面拖只会落回同一个组里，
+ * 图层就再也拖不出来了。
+ */
+.rootDropZone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 20px;
+  margin: 2px 1px 0;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-color);
+}
+
+.rootDropActive {
+  border-color: var(--accent-primary);
+  background: rgba(74, 158, 255, 0.1);
+}
+
+.rootDropLabel {
+  font-size: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* ---------- 图层组 ---------- */
+.collapseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  color: var(--text-muted);
+}
+
+/* 普通图层没有折叠箭头，留出等宽占位，名字才和组对齐 */
+.collapseSpacer {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.collapseButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 组没有像素缩略图，占位宽度与 .thumb 对齐，列表才不会参差不齐 */
+.groupIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 高度对齐 .thumb 的外框（20px + 上下各 1px 边框），组行与像素行才等高 */
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.thumb {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: block;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background-image: linear-gradient(45deg, #555 25%, transparent 25%),
+    linear-gradient(-45deg, #555 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #555 75%),
+    linear-gradient(-45deg, transparent 75%, #555 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  background-color: #6a6a6a;
+  object-fit: contain;
+}
+
+/* ---------- 图层/蒙版缩略图 ---------- */
+.thumbGroup {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.thumbButton {
+  display: block;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  line-height: 0;
+  background: none;
+  cursor: pointer;
+}
+
+/* 当前绘制目标。PS 里靠这圈描边判断在画图层还是蒙版 */
+.thumbTarget {
+  border-color: var(--accent-primary);
+}
+
+/* 蒙版停用时打叉示意，与 PS 的红叉同义 */
+.thumbDisabled {
+  position: relative;
+}
+
+.thumbDisabled::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 1px),
+    #ff5555 calc(50% - 1px),
+    #ff5555 calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  pointer-events: none;
+}
+
+/* 蒙版是灰度图，不需要透明棋盘背景 */
+.maskThumb {
+  background: #000;
+  background-image: none;
+}
+
+.layerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * 必须显式写 line-height。
+ * index.css 上是 `font: 18px/145%`，百分比行高在 html 上就解析成 26.1px 定值，
+ * 之后按长度往下继承——子元素把 font-size 改成 12px 也还是 26.1px 行高，
+ * 于是这一行怎么压都下不来。
+ */
+.layerName {
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+/* 徽标跟在名字右边同一行：穿透/蒙版这类状态要看得见，但不值得占一整行 */
+.layerBadge {
+  flex-shrink: 0;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 14px;
+  border-radius: 2px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+}
+
+.nameInput {
+  width: 100%;
+  padding: 0 3px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-primary);
+  border-radius: 3px;
+}
+
+/* 横排，不再竖着堆两个按钮——竖排是行高降不下来的主因 */
+.layerControls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.miniButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 20px;
+  border-radius: 2px;
+  color: var(--text-muted);
+}
+
+/*
+ * 锁按钮平时不显示，hover 或已锁定才出现。
+ * 每行常驻两个图标会把名字挤没，PS 也是只在锁上时才显示锁标记。
+ */
+.lockButton {
+  visibility: hidden;
+}
+
+/* 只锁了细分项（透明/像素/位置）时锁标记画淡一点，与全部锁定区分开 */
+.lockPartial {
+  visibility: visible;
+  opacity: 0.55;
+}
+
+/* ---------- 锁定栏 ---------- */
+.lockRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px var(--spacing-md) var(--spacing-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lockLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.lockBarButton {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
+/* ---------- 过滤栏 ---------- */
+/* 过滤栏与面板菜单同一行，菜单按钮贴右，与 PS 的面板头一致 */
+.panelHead {
+  display: flex;
+  align-items: center;
+}
+
+.panelHead > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.panelHead .panelMenuButton {
+  margin-right: var(--spacing-sm);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* 条件控件占满中间的剩余宽度，各档 kind 切换时栏高不变 */
+.filterValue {
+  flex: 1;
+  min-width: 0;
+}
+
+.filterTypes {
+  display: flex;
+  gap: 2px;
+}
+
+.filterTypeButton,
+.filterToggle,
+.panelMenuButton {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.filterInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+}
+
+.filterInput:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* 过滤生效时给列表加个提示边，与 PS 一样让人看出"现在看到的不是全部" */
+.filterActive {
+  box-shadow: inset 0 0 0 1px var(--accent-primary);
+}
+
+.layerItem:hover .lockButton,
+.lockButton.miniActive {
+  visibility: visible;
+}
+
+.miniButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.miniActive {
+  color: var(--accent-primary);
+}
+
+/* 眼睛关闭状态：不用品牌色，用普通文字色即可 */
+.eyeClosed {
+  color: var(--text-primary);
+}
+
+/* ---------- 历史面板 ---------- */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-xs);
+  gap: 1px;
+}
+
+.historyItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.historyItem:hover {
+  background: var(--bg-tertiary);
+}
+
+.historyCurrent {
+  background: rgba(74, 158, 255, 0.16);
+  color: var(--text-primary);
+}
+
+/* 当前之后的记录（可重做）显示为灰 */
+.historyFuture {
+  opacity: 0.42;
+}
+
+.historyIndex {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 调整面板 ---------- */
+.adjustBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.adjustFooter {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.fieldLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 56px;
+  resize: vertical;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+/* ---------- 导航器 ---------- */
+.navigator {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.navPreview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.navImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.infoLabel {
+  color: var(--text-muted);
+}
+
+/* ══════════════ 分隔条 ══════════════ */
+
+/*
+ * 画布与面板之间的垂直分隔条（调面板总宽度）。
+ *
+ * 视觉上只有 4px 宽，但 ::after 往两侧各撑 3px 做命中区 ——
+ * 4px 的带子鼠标都难压准，手指更不可能。
+ */
+.splitter {
+  grid-area: splitter;
+  position: relative;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  cursor: ew-resize;
+  user-select: none;
+  transition: background 0.12s ease;
+}
+
+.splitter::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline: -3px;
+}
+
+.splitter:hover,
+.splitter:focus-visible {
+  background: var(--accent-primary);
+  outline: none;
+}
+
+/*
+ * 历史组与图层组之间的水平分隔条（调上下比例）。
+ * 与 .splitter 对称：那个 4px 宽，这个 4px 高。
+ */
+.groupSplitter {
+  grid-row: 2;
+  position: relative;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  cursor: ns-resize;
+  user-select: none;
+  transition: background 0.12s ease;
+}
+
+/* 同 .splitter：上下各撑 3px 命中区 */
+.groupSplitter::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block: -3px;
+}
+
+.groupSplitter:hover,
+.groupSplitter:focus-visible {
+  background: var(--accent-primary);
+  outline: none;
+}
+
+/* ══════════════ 窄屏面板区（图标轨 + 单个面板体） ══════════════ */
+
+/*
+ * 横向两块：左边面板体（收起时不渲染），右边固定 44px 图标轨。
+ *
+ * 面板体在**文档流里**，不是浮层。上一版做成 absolute 浮层往左展开
+ * （right: 100%），结果整块落在 .panels 之外，被它和 EditorLayout 的
+ * overflow: hidden 全裁掉 —— DOM 在、量得到尺寸、屏幕上什么都没有。
+ * 排进流里就不存在这个问题，也不用去动任何祖先的 overflow。
+ */
+.mobilePanels {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/*
+ * 面板体：**浮在画布上**，贴着图标轨左边，自己是滚动容器。
+ *
+ * 为什么是 fixed 而不是待在流里：流里的宽度只能是 视口-52-4-44=290 里分给面板
+ * 的那部分，给面板 294 画布只剩 40，给画布 290 面板只剩 165 —— 而 165px 装不下
+ * 面板里任何一排按钮（底部操作条 11 颗、锁定栏 4 颗、过滤栏 4 颗，触屏每颗 32px），
+ * 每排折三四行，头尾吃掉 753px，图层列表只剩 200px。浮起来两头都能要：
+ * 画布恒为 290px，面板要用时盖上来。
+ *
+ * 四层祖先都是 overflow: hidden（.mobilePanels / .panels ×2 / .editorLayout），
+ * absolute 会被裁掉；它们都没有 transform 也没有 contain，所以 fixed 能全部逃出去
+ * —— 规约 §3.4 的做法，窄屏下拉菜单同理。**不要**给这条链上任何一层加
+ * `-webkit-overflow-scrolling: touch`：iOS Safari 上它会让滚动容器变成 fixed
+ * 后代的包含块，浮层又被关回去（MenuBar.module.css 里记着同一个坑）。
+ *
+ * top / height / right / width 四个值由 MobilePanels 内联给出，从图标轨量出来。
+ * 这里不写死任何坐标：栅格行高、触屏下变高的选项栏、#root 上那 1px 边框，
+ * 抄进来就是复制一份布局知识，上游一改浮层静默错位。
+ *
+ * 没有独立的标题栏 —— 面板自己的 sectionHeader 已经写着标题了，理由见
+ * MobilePanels.tsx 里那段注释。收起的入口只有图标轨顶部那一颗，两个地方
+ * 都能收起会让人不确定它们是不是同一件事。
+ */
+.mobileBody {
+  position: fixed;
+  z-index: 5;
+  background: var(--bg-secondary);
+  /* 浮层要有边界感，否则和下面的画布糊在一起分不清哪块能点 */
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 挡住 iOS 橡皮筋把整块面板拽走 */
+  overscroll-behavior: contain;
+}
+
+/* 图标轨。宽度固定，收起与展开时图标位置一模一样 */
+.mobileRail {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--touch-target, 44px);
+  height: 100%;
+  background: var(--bg-secondary);
+}
+
+/* 轨顶的收起/展开按钮 */
+.railToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--touch-target, 44px);
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.railToggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.railList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-sm) 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.railIcon,
+.railIconActive {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--touch-target, 44px);
+  flex-shrink: 0;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.railIcon:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+/* 选中态：与工具栏 .active 同一套视觉语言 */
+.railIconActive {
+  color: #fff;
+  background: var(--accent-primary);
+}
+
+/* ══════════════ 粗指针（手指）覆盖 ══════════════ */
+/*
+ * 基线不动，只加覆盖块 —— 桌面端一个字节都不改（第二期定的做法）。
+ * 搜 "pointer: coarse" 能找到全项目所有这类块。
+ */
+@media (pointer: coarse) {
+  /* ---------- 图层行 ---------- */
+  .layerItem {
+    min-height: var(--touch-target);
+  }
+
+  /*
+   * 眼睛与锁：32×40，不是 44×44。
+   *
+   * 一行里横向要排眼睛、折叠箭头、缩略图、名字、徽标、锁，面板还能拖到很窄，
+   * 两头各给 44 就没有名字的位置了。横向 32 + 吃满 40 行高，
+   * 实际命中面积比 26×26 大三倍多，手指够用。
+   */
+  .miniButton {
+    width: 32px;
+    height: 40px;
+  }
+
+  /*
+   * 锁按钮必须常显。
+   *
+   * 平时藏着、hover 才出现 —— 触屏没有 hover，那这个按钮在 iPad 上
+   * 永远点不到，等于功能没了。PS 的做法是 hover 才显（桌面保持不变），
+   * 触屏做不到，所以退化成常显 + 没锁时画淡。
+   */
+  .lockButton {
+    visibility: visible;
+    opacity: 0.4;
+  }
+
+  .lockButton.miniActive,
+  .lockPartial {
+    opacity: 1;
+  }
+
+  /* 折叠箭头：宽度留给名字，靠行高吃满 */
+  .collapseButton {
+    width: 20px;
+    height: 40px;
+  }
+
+  /* Alt+点击建剪贴蒙版的那条边。5px 手指绝对压不准 */
+  .clipHotzone {
+    bottom: -5px;
+    height: 11px;
+  }
+
+  /* ---------- 底部操作条 ---------- */
+  /*
+   * 11 个按钮 × 44px = 484px，面板放不下，必须换行。
+   * 换行后那个 flex:1 的占位撑不出「新建靠左、删除靠右」，
+   * 反而把按钮挤得看不出分组，所以粗指针下不显示它。
+   * 顺序一个没变，只是从「一行 + 中间留空」变成「顺序流式排两行」。
+   */
+  .layerToolbar {
+    flex-wrap: wrap;
+  }
+
+  .toolbarGap {
+    display: none;
+  }
+
+  /* ---------- 锁定栏 / 过滤栏 ---------- */
+  /*
+   * 这几个 class 自己写死了 20~22px，和 .iconButton 一样是单类选择器，
+   * 谁生效取决于打包顺序 —— 不能赌。用两级选择器压死。
+   * flex 三值：放得下取 44，面板拖窄了等比收，最小 32。
+   */
+  .lockRow .lockBarButton,
+  .filterRow .filterTypeButton,
+  .filterRow .filterToggle,
+  .panelHead .panelMenuButton {
+    flex: 0 1 var(--touch-target);
+    width: var(--touch-target);
+    height: var(--touch-target);
+    min-width: 32px;
+  }
+
+  /* ---------- 其余可点行 ---------- */
+  .dockTab {
+    min-height: var(--touch-target);
+    font-size: 13px;
+  }
+
+  .historyItem {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  /* 两条分隔条的命中区再加宽：4px 手指压不准 */
+  .splitter::after {
+    inset-inline: -10px;
+  }
+
+  .groupSplitter::after {
+    inset-block: -10px;
+  }
+}
+
+/* ══════════════ 窄屏布局覆盖 ══════════════ */
+/*
+ * 断点与 WIDE_LAYOUT_QUERY 的 820 同源（那边是 min-width，这里是 max-width，
+ * 互补不重叠）。桌面端进不到这个块。
+ *
+ * 为什么需要它：窄面板里那些按钮行都会折行（十一颗 44px 的底部操作条一行
+ * 放不下），折出来的行把竖向空间吃光，图层列表 —— 面板里最要紧的那块 ——
+ * 被压成一条缝。PS 的图层面板有最小宽度所以碰不到这个问题；我们跟 Photopea
+ * 允许拖窄，就得自己保住列表高度。
+ *
+ * 做法是给列表一个下限高度，面板体本身能滚（.mobileBody overflow-y: auto），
+ * 于是折行多出来的高度变成滚动内容，而不是从列表身上抢。
+ */
+@media (max-width: 819px) {
+  /*
+   * 面板里那些「一排按钮」的行，窄面板下允许折行。
+   *
+   * 不折行的后果是右边的按钮被顶到面板外，点不到 —— 底部操作条十一颗、
+   * 锁定栏四颗，触屏下每颗 32~44px，一行装不下。PS 的图层面板有最小宽度，
+   * 根本到不了这个宽度；我们跟 Photopea 允许拖窄，就得自己处理。
+   *
+   * 过滤栏留在清单里，但下面把各项的 flex 基准调成「一行放得下」——
+   * 折行能力当兜底：320px 那种极窄屏一行真放不下时，折的是总开关而不是
+   * 让类型按钮溢出到面板外点不到。`.filterTypes` 反过来必须 nowrap，
+   * 那一排图标一折就等于这次改动白做。
+   */
+  .panelHead,
+  .filterRow,
+  .lockRow,
+  .layerToolbar {
+    flex-wrap: wrap;
+  }
+
+  /*
+   * 过滤栏要独占一整行：不然「面板选项」那颗按钮把它挤到 112px，
+   * 减去内边距只剩 88，而两颗类型按钮要 90，就差 2px，
+   * 于是类型按钮变成一行一颗竖着排。basis 160 让那颗按钮掉到下一行。
+   */
+  .panelHead > :first-child {
+    flex: 1 1 160px;
+  }
+
+  /*
+   * 条件控件按内容取宽，不再要死 90px。
+   *
+   * 要 basis 90 的话，kind = 类型时它内容是 134px 的一排按钮，90 的基准会让
+   * flex 先按 90 排、再把超出的部分溢出去；改成 auto 就是「按内容 134 起算」，
+   * 一行的预算才算得准。可缩 —— 但 kind = 类型时缩的是内部按钮之间的空隙，
+   * 按钮本身有 flex: 0 0 32px 顶着，缩不到命中下限以下。
+   */
+  .filterValue {
+    flex: 0 1 auto;
+    /*
+     * 上限 53%，剩下的留给「按什么筛」那个下拉。
+     *
+     * 没有上限时 kind = 模式一档实测「选取」下拉只剩 18px —— 混合模式下拉的
+     * max-content（「线性光」这类）把整行吃光了。而「选取」是「我现在按什么筛」
+     * 的上下文，看不见等于不知道自己在筛什么，比条件控件窄一点严重得多。
+     * 上限取六成时下拉是 55px，实测「模式」被原生截成「模」，仍然不够，
+     * 所以收到 53%：可用宽 242 × 53% = 128，下拉拿到
+     * 242 − 128 − 开关 32 − 间距 4 = 78 ≥ 一点不截所需的 70 ✓。
+     *
+     * 上限只能加在「装的是下拉或输入框」这几档上：kind = 类型那档里面是 4 颗
+     * 32px 按钮共 131px 且不可收缩（见下面 .filterTypes），128 的上限会把按钮
+     * 挤出容器点不到。所以用 :has() 按内容形态区分，见下面那条规则。
+     *
+     * 试过 min-width: min-content 来豁免类型那档（min-width 优先级高于 max-width），
+     * 不行：Chromium 给原生 <select> 算的 min-content 等于最宽选项的宽度，
+     * 和 max-content 一样大，于是模式那档又把整行吃光，下拉回到 18px。
+     */
+    min-width: 0;
+  }
+
+  /*
+   * 条件控件是下拉或输入框时才收上限（理由见上面 .filterValue 那段）。
+   * 这两种控件本来就能伸缩，让位给「选取」下拉不损失可读性 ——
+   * 原生下拉收窄后收起的是选项文字的余量，选中项照旧显示。
+   *
+   * :has() 各家都支持：Chrome/Edge 105、Safari 15.4、Firefox 121，
+   * 早于规约要求的「近两个大版本」，不需要回退（§3.1）。
+   * 万一不支持，退化成没有上限，也就是回到「模式那档下拉偏窄」，不会破版。
+   */
+  /*
+   * 用后代而不是子选择器：<Select> 外面还包了一层 fieldRow
+   * （`<div class=fieldRow><label/><select/></div>`），写 `> select` 选不中。
+   * 后代形式在这里不会误伤类型按钮那档 —— 那档里面是 4 个 <button>，
+   * 既没有 select 也没有 input。
+   */
+  .filterValue:has(select),
+  .filterValue:has(input) {
+    max-width: 53%;
+  }
+
+  /*
+   * 过滤栏压成一行：「选取」下拉 + 四颗类型按钮 + 总开关同排。
+   *
+   * 一路降下来的账：144px（三行）→ 101px（两行）→ 57px（一行）。
+   * PS 那条过滤栏是 24px 一行，这是能贴到的最近的一档（差的是触屏 44px 命中高）。
+   *
+   * 一行装得下的关键是把「选取」那个文字标签藏掉，腾出 56 + 8 = 64px。
+   * PS 的过滤栏本来就没有这个标签 —— 下拉自己显示的就是「类型/名称/模式」，
+   * 标签是我们自己加的冗余。所以这不是为了省空间偏离 PS，是回到 PS。
+   * 藏的只是视觉标签，无障碍名称走 <select> 上的 aria-label，没丢（§5）。
+   *
+   * 预算（390px 屏，面板体 294，过滤栏拿到 262）：
+   *   内边距 8×2 = 16，余 246
+   *   四颗类型按钮 4×32 + 3×2 = 134，总开关 32，两处间距 2×4 = 8
+   *   → 留给下拉 246 − 174 = 72px，装「类型」+ 原生箭头够了（实测需 ~39px）
+   *
+   * 所以这一行里**下拉是让位的那个**：它 flex 可缩、basis 给 0；
+   * 类型按钮那组 `flex: 0 0 auto` 不许缩也不许折 —— 缩了按钮就低于 32px 命中下限，
+   * 折了就又回到两行。kind 换成名称/模式/颜色/属性时那边是输入框或下拉，
+   * 本来就能伸缩，下拉也就跟着宽回来（属性那档实测下拉能拿到 ~130px，
+   * 够放英文最长的 "Attribute"）。
+   */
+  .filterRow {
+    --label-inline-display: none;
+    /*
+     * 间距和内边距都收到最紧，差的就是那几个像素。实测账（390px，粗指针）：
+     * 行宽 254 −（左右内边距 6×2）= 242 可用；
+     * 「选取」下拉一点不截要 70（下拉字号在粗指针下是 16px 防 iOS 缩放，
+     * 不是基线的 12px —— 这里踩过两次，别再按 12 算），
+     * 四颗类型按钮 4×32 + 3×1 = 131，总开关 32，两处间距 2×2 = 4，
+     * 合计 237 ≤ 242 ✓，还剩 5px 余量。
+     * 按原来的 gap 4 / padding 8 算是 244 > 238，「类型」会被截成「类」。
+     */
+    gap: 2px;
+    padding: 4px 6px;
+  }
+
+  /*
+   * 「选取」下拉：basis 0 + 可伸，剩多少用多少。
+   *
+   * **不许给它 min-width。** 试过 72px，结果整行反而折回两行 —— flex 的
+   * 换行发生在收缩**之前**，min-width 会抬高换行算法用的「假想主尺寸」，
+   * 于是 72 + 类型按钮 134 + 开关 32 + 间距 8 = 246 超过这一行实际可用的
+   * 238px（面板体 294 − 面板菜单按钮 32 − 其外边距 8 − 本行内边距 16），
+   * 直接折行。390px 屏上这一档没有任何余量，下拉自然分到的 64px 就是上限。
+   *
+   * 64px 够不够：内容盒 64 − 内边距 16 − 边框 2 = 46，
+   * 中文「类型」24 + 原生箭头 15 = 39 ✓，英文 "Type" 也够。
+   */
+  .filterRow > :first-child {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /*
+   * 类型按钮那组：不缩不折。
+   * 缩会掉到 32px 命中下限以下，折就等于这次改动白做。
+   */
+  .filterTypes {
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
+    /* 四颗按钮之间收到 1px：省下的 3px 直接变成「选取」下拉的可用宽度 */
+    gap: 1px;
+  }
+
+  /*
+   * 折行之后那个 flex: 1 的占位撑不出「新建靠左、删除靠右」，
+   * 反而在某一行中间空出一块，看着像漏了按钮。顺序一个没变，
+   * 只是从「一行 + 中间留空」变成「顺序流式排几行」。
+   * 粗指针块里已经有同一句，这里补的是「窄窗口 + 鼠标」那一档。
+   */
+  .toolbarGap {
+    display: none;
+  }
+
+  /*
+   * 头尾各行的竖向留白收紧。
+   *
+   * 这些行的高度里，控件本身是 44px（触屏命中下限，不能动），剩下的全是
+   * 内边距和行间距 —— 混合行 113px 里有 25px、锁定栏 55px 里有 11px、
+   * 底部操作条 99px 里有 11px。窄屏上这些留白是纯损耗：面板体只有一列，
+   * 不需要靠留白把相邻分区分开，1px 的分隔线已经够了。
+   * 桌面端的疏密照旧（那边控件才 22px 高，留白占比本来就正常）。
+   */
+  .blendRow {
+    gap: 4px;
+    padding-block: 4px;
+  }
+
+  .lockRow {
+    padding-block: 2px;
+  }
+
+  .layerToolbar {
+    padding-block: 2px;
+  }
+
+  /*
+   * 图层列表与历史列表要保住高度。
+   *
+   * 上面那些行折出来的高度会从 flex: 1 的列表身上抢 —— 列表是面板里最要紧
+   * 的一块，被压成一条缝就等于面板不可用。给个下限，多出来的高度让
+   * .mobileBody 滚动消化。
+   */
+  .layerList,
+  .historyList {
+    min-height: 200px;
+  }
+}
+
+/*
+ * 窄屏 + 触屏：锁定栏/过滤栏那几颗按钮的宽度定死 32，不再走「44 收缩到 32」。
+ *
+ * 理由见 .filterTypes 那段：收缩和折行不能兼得，定死宽度再折行才排得满。
+ * 高度仍是 44，命中面积 32×44 —— 与同文件里 .miniButton 的 32×40 同一档，
+ * 那处已论证过手指够用。
+ *
+ * 只管窄屏：≥820px 的平板上 44 本来就放得下，那边照旧走粗指针块的 44。
+ * 精指针的窄窗口也不进这里，保持基线的 22px（四颗才 94px，本来就装得下）。
+ */
+@media (max-width: 819px) and (pointer: coarse) {
+  .lockRow .lockBarButton,
+  .filterRow .filterTypeButton,
+  .filterRow .filterToggle,
+  .panelHead .panelMenuButton {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+  }
+}
+
+/*
+ * 极窄屏（320 那一档）：过滤栏一行确实放得下，但「选取」下拉实测只剩 27px，
+ * 等于只剩个箭头，看不出自己在按什么筛。这一档宁可折成两行 ——
+ * 认得出筛选条件比省 44px 高度重要，而 390 及以上一行放得下，不受影响。
+ *
+ * 手法就是给下拉一个地板。flex 的换行在收缩**之前**算，min-width 会抬高
+ * 换行用的假想主尺寸，于是总开关被挤到第二行，下拉宽回来 —— 这正是
+ * ≥360px 那档**不能**加地板的同一个机制（见上面 .filterRow > :first-child）。
+ * 同一个副作用，在两个宽度档里一个是 bug 一个是需求，所以按档分开写。
+ *
+ * 72 是实测值：粗指针下下拉字号 16px，中文两字 32 + 原生箭头 + 内边距 16
+ * 一点不截需要 70（离屏 max-content 量的），取 72 留 2px 余量。
+ */
+@media (max-width: 359px) {
+  .filterRow > :first-child {
+    min-width: 72px;
+  }
+
+}

@@ -1,0 +1,35 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.preview {
+  width: 100px;
+  height: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.preview:hover {
+  border-color: var(--primary);
+}
+
+.kindPicker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.kindIcon {
+  font-size: 16px;
+  line-height: 1;
+  display: block;
+}

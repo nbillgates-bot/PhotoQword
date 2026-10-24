@@ -1,0 +1,152 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.editorLayout {
+  display: grid;
+  grid-template-areas:
+    'menu menu menu menu'
+    'options options options options'
+    'toolbar canvas splitter panels'
+    'status status status status';
+  grid-template-rows: 44px 36px 1fr 26px;
+  /*
+   * 面板宽度由 --panel-width 决定，值来自 store（见 engine/panelWidth）。
+   * 写成自定义属性而不是内联 grid-template-columns：拖动时每帧只改一个数，
+   * 不用重新拼整条模板字符串。
+   */
+  /*
+   * 分隔条那一列也走自定义属性：窄屏收起态它是 0（没有可调宽度，
+   * 见 EditorLayout 的 splitterWidth）。桌面恒为 4px，与改造前一致。
+   */
+  grid-template-columns: 52px 1fr var(--splitter-width, 4px) var(--panel-width, 288px);
+  width: 100%;
+  /*
+   * dvh 而不是 vh。
+   *
+   * 移动浏览器的地址栏会伸缩，`100vh` 取的是**最大**视口高度（地址栏收起时
+   * 的那个）。地址栏展开着的时候 100vh 比可见区域高，底部的状态栏那一行就被
+   * 推到屏幕外 —— 而这里是 overflow: hidden，推出去就再也滑不回来。
+   * dvh 跟着当前可见区域走。
+   *
+   * 桌面上两者等值，所以这一改对桌面没有任何视觉影响。
+   *
+   * 回退在下面用 @supports 单独写，不在这里多写一行 `height: 100%` ——
+   * 已验证过：没配 browserslist / build.target 时 lightningcss 按默认目标
+   * 认为 dvh 全支持，会把前一行 height 当死代码删掉，两行式回退活不下来。
+   */
+  height: 100dvh;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+/*
+ * dvh 的回退。
+ *
+ * 用 100% 而不是 100vh：globals.css 里 html / body / #root 已经是 height: 100%，
+ * 一路继承下来等于当前可见区域，与 dvh 想要的是同一个量；而 100vh 正是上面
+ * 要避开的那个「比可见区域高」的值。
+ *
+ * 这一块在支持范围内跑不到（dvh 从 Safari 15.4 / Chrome 108 / Firefox 101
+ * 就有，规约只要求覆盖近两个大版本），留着是几十字节的保险 —— 万一真跑到了，
+ * 后果不是「矮一点」而是底部整行被顶出屏幕。
+ */
+@supports not (height: 100dvh) {
+  .editorLayout {
+    height: 100%;
+  }
+}
+
+.menuBar {
+  grid-area: menu;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.optionsBar {
+  grid-area: options;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+/*
+ * 粗指针：选项栏那一行要加高（说明见 ui.module.css）。
+ *
+ * 原来是 36px，装不下撑到 44 的按钮和滑块 —— 选项栏 overflow-x: auto，
+ * 高度不够不会自己长高，只会把控件竖着切掉。52 = 44 + 上下各 4。
+ * 菜单栏本来就是 44，工具栏列 52px 也够，这两行不用动。
+ */
+@media (pointer: coarse) {
+  .editorLayout {
+    grid-template-rows: 44px 52px 1fr 26px;
+  }
+}
+
+.toolbar {
+  grid-area: toolbar;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /*
+   * 这一格**不滚**，滚动交给里面的 Toolbar 组件（Toolbar.module.css 的
+   * .toolbar 有 overflow-y: auto + height: 100%）。
+   *
+   * 两层都挂 auto 会得到嵌套滚动容器：外层其实没东西可滚（子元素撑满它），
+   * 但在触屏上手指的滑动该由哪一层吃掉是不确定的，表现就是"有时候滑不动"。
+   * 桌面上一直没暴露，因为 15 个工具组在 900px 高里放得下；手机 722px 放不下，
+   * 这个问题才显出来。
+   */
+  overflow: hidden;
+  min-height: 0;
+}
+
+.canvasArea {
+  grid-area: canvas;
+  background: var(--bg-primary);
+  position: relative;
+  /*
+   * z-index: 0 是为了建立层叠上下文，把画布内部的 z-index（标尺、参考线、
+   * 文字编辑器）都关在这一层里，不让它们跟菜单下拉、工具栏浮层、Toast 抢层级。
+   */
+  z-index: 0;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.panels {
+  grid-area: panels;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  /* 拖到最窄时内容要能收进去，而不是把这一列撑开 */
+  min-width: 0;
+}
+
+.splitter {
+  grid-area: splitter;
+}
+
+.statusBar {
+  grid-area: status;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}

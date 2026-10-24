@@ -1,0 +1,198 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  height: 100%;
+  padding: 0 var(--spacing-lg);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.toolName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-right: var(--spacing-lg);
+  border-right: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.input {
+  padding: 4px 8px;
+  /* 触屏下的字号与最小高度，见 globals.css 里那段 --touch-input-* 的说明 */
+  font-size: var(--touch-input-font, 12px);
+  min-height: var(--touch-input-height, 0);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  border-color: var(--primary);
+}
+
+.unit {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+/* 滑块在选项栏里需要固定宽度，否则会被 flex 压扁 */
+.sliderCell {
+  width: 168px;
+  flex-shrink: 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.selectCell {
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.iconGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/*
+ * 参数区的包裹层。
+ *
+ * 默认 display: contents —— 它在布局上**完全透明**，盒子模型里就像不存在，
+ * 于是宽屏下的排布与加这一层之前逐像素相同（.bar 直接排 toolName + 各参数格，
+ * 由 .bar 自己横向滚动）。桌面端一字未改这条硬要求就是靠它保证的。
+ *
+ * 窄屏下才把它变成真的滚动盒（见文件末尾的窄屏覆盖块），这样「更多」按钮
+ * 能钉在右端不被参数推走。contents 状态下量不到尺寸（scrollWidth 为 0），
+ * 但那正好——宽屏根本不需要判溢出，hasOverflow 对 0 宽答"没溢出"。
+ */
+.scroller {
+  display: contents;
+}
+
+/*
+ * 窄屏：820px 是 WIDE_LAYOUT_MIN_WIDTH，与 engine/inputCapability.ts 的
+ * WIDE_LAYOUT_QUERY 互为反面（那边是 min-width: 820，这边是 max-width: 819）。
+ * **改一个就要改另一个**，否则会出现「渲染了更多按钮但样式还按宽屏算」。
+ */
+@media (max-width: 819px) {
+  /* 滚动交给 .scroller，.bar 自己不再滚：否则按钮会跟着参数一起被推出去 */
+  .bar {
+    overflow-x: hidden;
+    gap: var(--spacing-md);
+    padding: 0 var(--spacing-sm);
+  }
+
+  .scroller {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 工具名在窄屏只留图标那点宽度，参数才是要看的 */
+  .toolName {
+    padding-right: var(--spacing-sm);
+    max-width: 92px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* 滑块在 375px 上占 168px 太宽，收窄让一屏能看到两个参数 */
+  .sliderCell {
+    width: 136px;
+  }
+}
+
+/* 「更多」入口。钉在右端，不随参数滚动 */
+.moreButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+/*
+ * 面板里的竖排版：每个参数占一行。
+ *
+ * 各参数组件返回的是一串横排 flex 项（本来给栏用的），这里靠容器改成纵向，
+ * **不改任何参数组件** —— 换容器不换内容，与面板那条要求同一个做法。
+ */
+.optionsStack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-md);
+}
+
+/* 栏里给滑块的固定宽度在竖排版里要放开，让它吃满面板宽度 */
+.optionsStack .sliderCell,
+.optionsStack .selectCell {
+  width: auto;
+  min-width: 0;
+}

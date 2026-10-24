@@ -1,0 +1,206 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.menuBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--spacing-md);
+}
+
+.logo {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  padding: 5px 8px;
+  user-select: none;
+  opacity: 0.7;
+}
+
+.menuItems {
+  display: flex;
+  gap: 2px;
+}
+
+.menuRoot {
+  position: relative;
+}
+
+.menuItem {
+  padding: 5px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.menuItem:hover {
+  background: var(--bg-hover);
+}
+
+.menuItemOpen {
+  background: var(--bg-tertiary);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 200;
+  min-width: 210px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.dropdownItem:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.dropdownItem:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.checkSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.itemLabel {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.shortcut {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: var(--spacing-lg);
+}
+
+.dropdownItem:hover:not(:disabled) .shortcut {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.menuDivider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-color);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+/*
+ * 窄屏：八个菜单 + 撤销/重做 + 导出在 375px 上排不下。
+ *
+ * 不删菜单，改成菜单区横向可滑（规约第零节：布局可以重排，功能不许删）。
+ * 不做汉堡包收纳：那会把每一项都多埋一层，而菜单是功能的总入口，
+ * 滑一下就能到比多点一次更快。
+ *
+ * 断点与 engine/inputCapability.ts 的 WIDE_LAYOUT_QUERY 互为反面
+ * （那边 min-width: 820，这边 max-width: 819），**改一个就要改另一个**。
+ */
+@media (max-width: 819px) {
+  .menuBar {
+    gap: var(--spacing-xs);
+    padding: 0 var(--spacing-xs);
+  }
+
+  /* QWORD 那个标记在窄屏是纯装饰，让位给菜单 */
+  .logo {
+    display: none;
+  }
+
+  /*
+   * 这里**不许**加 `-webkit-overflow-scrolling: touch`。
+   *
+   * 它在 iOS Safari 上会让这个滚动容器变成 fixed 后代的**包含块**，于是下面
+   * 那个 `position: fixed` 的下拉菜单不再相对视口定位，而是被关进这条
+   * `overflow-y: hidden` 的 44px 带子里，直接被裁得看不见 —— 现象是「菜单
+   * 点了没反应」，看着像 z-index 不对，其实是定位基准被换掉了。
+   * Chromium 与 Firefox 没有这个行为，所以桌面浏览器上怎么试都复现不出来。
+   *
+   * 去掉它不损失什么：iOS 13 起 `overflow: auto` 本身就有惯性滚动，
+   * 这个属性早已是无操作（且已被标为废弃）。
+   */
+  .menuItems {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .menuItems::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 菜单名不许被压扁换行，挤不下就靠滚动 */
+  .menuItem {
+    flex-shrink: 0;
+    min-height: var(--touch-target);
+    white-space: nowrap;
+  }
+
+  .actions {
+    flex-shrink: 0;
+  }
+
+  /*
+   * 下拉菜单：菜单区变成滚动容器之后，absolute 定位的下拉会被它裁掉
+   * （规约 §3.4 那个坑）。改成 fixed 挂在菜单栏下方 —— 菜单栏高度固定 44px，
+   * 所以这里能写死 top，不需要 JS 算坐标。
+   * 横向铺满并留边距：窄屏上按 left: 0 对齐会让靠右的菜单整块跑出屏幕。
+   */
+  .dropdown {
+    position: fixed;
+    top: 45px;
+    left: var(--spacing-sm);
+    right: var(--spacing-sm);
+    min-width: 0;
+    max-height: calc(100dvh - 60px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dropdownItem {
+    min-height: var(--touch-target);
+    font-size: 14px;
+  }
+}

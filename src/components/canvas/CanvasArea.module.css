@@ -1,0 +1,383 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.canvasArea {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/*
+ * 视口：接收所有指针事件。
+ *
+ * touch-action: none —— 浏览器自带的捏合缩放与滚动全部关掉，交给我们自己的
+ * 手势层（engine/touchGestures.ts）。不关的话双指捏合会缩放整个页面。
+ *
+ * callout 与 user-select —— 长按在这里的语义是「弹上下文菜单」（替代右键）。
+ * 不挡住的话 iOS Safari 会弹出系统的复制/查找气泡，Android Chrome 会起选词
+ * 手柄，两者都会盖住我们的菜单。webkit 前缀与标准写法都写上（规约 §3.1）。
+ */
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.viewportWithRulers {
+  inset: 20px 0 0 20px;
+}
+
+/*
+ * 文档容器：按 zoom 定尺寸，居中 + pan 偏移。
+ *
+ * 只放 CSS 装饰（棋盘、网格、图层边缘框），像素内容不在这里 ——
+ * 主画布与覆盖层是视口尺寸的，独立定位在视口上（见 .mainCanvas 的说明）。
+ * 分成前后两层是为了让 z 序对：棋盘垫在画布下面，网格与边缘框盖在上面。
+ */
+.stage {
+  position: absolute;
+  z-index: 1;
+  box-shadow: 0 0 0 1px var(--border-light), var(--shadow-lg);
+}
+
+.stageFront {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* 透明棋盘垫底 */
+.checker {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(45deg, #4a4a4a 25%, transparent 25%),
+    linear-gradient(-45deg, #4a4a4a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #4a4a4a 75%),
+    linear-gradient(-45deg, transparent 75%, #4a4a4a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: #5a5a5a;
+}
+
+/*
+ * 主画布与覆盖层：铺满**视口**，不是铺满文档。
+ *
+ * 这是性能优化的核心。之前它们的内在尺寸等于文档尺寸，靠 CSS 缩放显示；
+ * 790×16041 的长图一张画布就是 50MB，每次合成都要清一遍、中间缓冲还要再分配
+ * 好几张，于是缩放、拖图层、点眼睛全都要等好几秒。
+ * 现在内在尺寸等于视口（约 1200×800，3.8MB），缩放由 canvas 内部的变换矩阵做，
+ * 合成量与文档多大无关，只与屏幕多大有关。
+ *
+ * width/height 用 100% 而不写死像素：画布的内在尺寸带了 devicePixelRatio，
+ * 在 2x 屏上是视口的两倍，靠这里缩回 CSS 像素才不会显示成两倍大。
+ */
+.mainCanvas,
+.overlayCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.mainCanvas {
+  z-index: 2;
+}
+
+.overlayCanvas {
+  z-index: 3;
+  pointer-events: none;
+}
+
+/*
+ * 图层边缘（视图 > 显示图层边缘）。
+ * PS 用的是一条细实线，不是蚂蚁线——蚂蚁线是选区的语义，两者不能混。
+ * 用 outline 而不是 border：border 会把盒子撑大，框就比内容大一圈。
+ */
+.layerEdges {
+  position: absolute;
+  pointer-events: none;
+  outline: 1px solid var(--accent-primary);
+  outline-offset: -1px;
+}
+
+/* 网格覆盖（视图 > 显示网格） */
+.grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+}
+
+/* ---------- 空状态 ---------- */
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--spacing-xl);
+}
+
+.emptyIcon {
+  color: var(--border-light);
+}
+
+.emptyTitle {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.emptyText {
+  font-size: 13px;
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.emptyActions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---------- 空状态里的拖放提示 ---------- */
+.dropHint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  text-align: left;
+  /* 颜色跟着 dropHintActive 切换，加过渡免得高亮跳变 */
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+/* 文件悬在上方时整块提亮，明确告诉用户这里是落点 */
+.dropHintActive {
+  border-color: var(--accent-primary);
+  color: var(--accent-hover);
+  background: rgba(255, 73, 12, 0.08);
+}
+
+.dropHintBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropHintTitle {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dropHintFormats {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 拖放高亮 */
+.dropActive {
+  outline: 2px dashed var(--accent-primary);
+  outline-offset: -12px;
+  background: rgba(74, 158, 255, 0.06);
+}
+
+/* ---------- 缩放控制条 ---------- */
+.zoomBar {
+  position: absolute;
+  right: var(--spacing-lg);
+  bottom: var(--spacing-lg);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.zoomLevel {
+  min-width: 54px;
+  text-align: center;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* ---------- 触摸快捷方式 ----------
+ * 只在粗指针下渲染（组件里判定），所以这里的尺寸不必再包一层媒体查询。
+ * z-index 21：压过缩放条（20），仍留在画布区自己的层叠上下文里，
+ * 不去和菜单下拉抢层级（同标尺那条注释的坑）。
+ */
+.touchShortcut {
+  position: absolute;
+  bottom: var(--spacing-lg);
+  z-index: 21;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  /* 按住时浏览器不要选中文字、不要弹长按菜单，也不要把拖动当成滚动 */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.touchDockLeft {
+  left: var(--spacing-lg);
+}
+
+/*
+ * 靠右时要抬高：缩放条也在右下角（bottom 16 + 高约 52），
+ * 同一个角上两块浮层会叠在一起。抬过它再往上留 8px。
+ */
+.touchDockRight {
+  right: var(--spacing-lg);
+  bottom: 76px;
+}
+
+.touchKey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 62px;
+  min-height: var(--touch-target);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.touchKeyName {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* 当前工具下按住会得到什么。窄了就省略，不许换行把按钮撑高 */
+.touchKeyHint {
+  max-width: 76px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+}
+
+/* 按住中：实心，与工具栏选中态同一个语义 */
+.touchKeyHeld {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+.touchKeyHeld .touchKeyHint {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/*
+ * 锁定一次：描边而不是实心，与「按住中」区分开 —— 两者都生效，
+ * 但一个会自己解除、一个不会，用户必须能一眼看出现在是哪种。
+ */
+.touchKeyLatched {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: inset 0 0 0 1px var(--accent-primary);
+}
+
+.touchSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  min-height: var(--touch-target);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+/* ---------- 放大镜 ----------
+ * 圆形，贴在指尖上方。z-index 要压过覆盖层画布与参考线（140），
+ * 但仍留在画布区的层叠上下文里（同标尺那条注释）。
+ * pointer-events: none 是关键 —— 它就浮在手指旁边，能拦事件就等于拦掉了
+ * 正在进行的那次拖动。
+ */
+.loupe {
+  position: absolute;
+  z-index: 145;
+  pointer-events: none;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-light);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ---------- 标尺 ----------
+ * z-index 用 150：要压过画布内容（文字编辑器 100、缩放条 20）和参考线（140），
+ * 但必须留在画布区自己的层叠上下文里。之前写 999 会逃到根上下文，
+ * 把菜单栏下拉（200）和面板浮层压住。
+ */
+.rulerCorner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  z-index: 150;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.rulerH {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  right: 0;
+  height: 20px;
+  z-index: 150;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  pointer-events: auto; /* 确保可以接收事件 */
+}
+
+.rulerV {
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 0;
+  width: 20px;
+  z-index: 150;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  pointer-events: auto; /* 确保可以接收事件 */
+}

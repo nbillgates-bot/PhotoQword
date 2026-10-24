@@ -1,0 +1,221 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--spacing-sm) 0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.slot {
+  position: relative;
+}
+
+.toolButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.toolButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.active {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.active:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+/* 组内有多个工具时，右下角一个小三角提示（可直接点击展开） */
+.groupMark {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-bottom: 5px solid currentColor;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.toolButton:hover .groupMark {
+  opacity: 1;
+}
+
+/*
+ * 组内工具的弹出列表。
+ * 用 fixed 而不是 absolute：工具栏是滚动容器，absolute 会被裁掉。
+ * left/top 由 JS 按按钮位置计算。
+ */
+.flyout {
+  position: fixed;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  gap: 1px;
+  min-width: 176px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.flyoutItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.flyoutItem:hover {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.flyoutActive {
+  background: var(--bg-hover);
+}
+
+.flyoutCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--accent-primary);
+}
+
+.flyoutItem:hover .flyoutCheck {
+  color: #fff;
+}
+
+.flyoutLabel {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.flyoutKey {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.flyoutItem:hover .flyoutKey {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.divider {
+  width: 28px;
+  height: 1px;
+  margin: 5px 0;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+/* 前景/背景色 */
+.colors {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
+  align-items: center;
+}
+
+.colorPair {
+  position: relative;
+  width: 38px;
+  height: 34px;
+}
+
+/*
+ * 两个色块有一角重叠，前景色必须压在背景色上面（PS 就是这个层叠）。
+ *
+ * 两边都写显式 z-index，不靠 DOM 顺序：两者都是 absolute 且原本都没写层级，
+ * 于是按文档顺序层叠 —— .bgSlot 在 JSX 里排在后面，反而盖住了前景色。
+ * 以后调整 JSX 顺序也不会再把层叠弄反。
+ */
+.fgSlot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+}
+
+.bgSlot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+.swapRow {
+  display: flex;
+  gap: 2px;
+}
+
+/* ---------- 粗指针（手指）覆盖，说明见 ui.module.css ---------- */
+@media (pointer: coarse) {
+  /* 工具栏列宽 52px，44 + 左右各 4 刚好 */
+  .toolButton {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+
+  /* 组标记也要跟着放大，不然 44px 的按钮上那个 5px 三角看不见也点不着 */
+  .groupMark {
+    border-left-width: 7px;
+    border-bottom-width: 7px;
+  }
+
+  /* 弹出项：与 ContextMenu 同一档，40px */
+  .flyoutItem {
+    min-height: 40px;
+    font-size: 14px;
+  }
+
+  /*
+   * 换色/复位那两个按钮改竖排。
+   * IconButton 撑到 44 之后横排要 90px，而工具栏列只有 52px。
+   * 竖排在这里没有代价：工具栏本来就是一条纵向滚动的列。
+   */
+  .swapRow {
+    flex-direction: column;
+  }
+
+  /* 双色块外框跟着 .swatch 的 28px 一起放大（min-* 那条见 ui.module.css） */
+  .colorPair {
+    width: 46px;
+    height: 42px;
+  }
+}

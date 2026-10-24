@@ -1,0 +1,24 @@
+# 本仓库只公开源码。
+#
+# 用白名单而不是黑名单：根目录下除下列路径外一律不纳入版本库。
+# 原因是这个目录里混着部署脚本（含服务器 root 明文密码）、备份压缩包、
+# 日志和验证截图，黑名单漏一条就会把它们推上 GitHub。
+/*
+!/.gitignore
+!/index.html
+!/package.json
+!/package-lock.json
+!/vite.config.ts
+!/vitest.config.ts
+!/tsconfig.json
+!/tsconfig.app.json
+!/tsconfig.node.json
+!/.oxlintrc.json
+!/src/
+!/public/
+
+# 兜底：白名单已排除，写在这里防止以后有人改成黑名单时踩坑
+node_modules/
+dist/
+backups/
+*.log

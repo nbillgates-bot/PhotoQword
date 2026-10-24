@@ -1,0 +1,41 @@
+{
+  "name": "photoqword",
+  "private": false,
+  "version": "0.0.0",
+  "author": "Richard Tong <nbillgates@gmail.com> (https://www.qword.com)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "node smoke.mjs",
+    "audit:i18n": "node scripts/audit-i18n.mjs",
+    "verify:i18n": "node verify-i18n.mjs",
+    "verify:live": "node verify-live.mjs",
+    "verify:live:mobile": "node verify-live-mobile.mjs",
+    "verify:colorlib": "node verify-color-library.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ag-psd": "^31.0.2",
+    "fabric": "^7.4.0",
+    "lucide-react": "^1.30.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "jsdom": "^26.1.0",
+    "oxlint": "^1.75.0",
+    "playwright": "^1.56.1",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

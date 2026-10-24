@@ -1,0 +1,85 @@
+﻿/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+/* 全局样式重置和主题变量 */
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3a3a3a;
+  --bg-hover: #404040;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-muted: #808080;
+  --border-color: #404040;
+  --border-light: #505050;
+  --accent-primary: #ff490c;
+  --accent-hover: #ff6a38;
+  --accent-active: #e64109;
+  --danger: #ff5252;
+  --warning: #ffa726;
+  --success: #66bb6a;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5);
+
+  /*
+   * 触屏最小命中区。44px 是 Apple HIG 与 Material 共同的下限，
+   * 也是 PS on iPad 的实际按钮尺寸量级。
+   *
+   * 只在 @media (pointer: coarse) 里用它 —— 桌面端一律保持原尺寸
+   * （规约第零节：桌面端行为一条都不许改）。各模块的粗指针覆盖块
+   * 统一写在文件末尾，找的时候搜 "pointer: coarse"。
+   */
+  --touch-target: 44px;
+}
+
+/*
+ * 输入框在粗指针下的字号与高度。
+ *
+ * 写成「变量只在触屏下定义，各处用 var(x, 原值) 取默认」，而不是每个模块
+ * 各开一个 @media：输入框散在 6 个 css 模块里，复制 6 份媒体查询迟早改漏一处。
+ * 桌面端这两个变量根本没定义，各处一律走 var() 的第二参数，也就是原值。
+ *
+ * 16px 是硬要求不是审美：iOS Safari 聚焦小于 16px 的输入框会自动放大整个页面，
+ * 放大之后画布位置全乱，还得手动缩回去。index.html 里没有 maximum-scale，
+ * 而 iOS 10 以后也已经不认那个了，只能从字号这头治。
+ */
+@media (pointer: coarse) {
+  :root {
+    --touch-input-font: 16px;
+    --touch-input-height: var(--touch-target);
+  }
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#root { width: 100%; height: 100%; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
+input, textarea, select { font-family: inherit; outline: none; }

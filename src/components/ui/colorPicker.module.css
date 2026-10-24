@@ -1,0 +1,383 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.popover {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 232px;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 弹出层贴着左边缘时向右展开 */
+.popoverRight {
+  left: auto;
+  right: 0;
+}
+
+.sv {
+  position: relative;
+  width: 100%;
+  height: 132px;
+  border-radius: var(--radius-sm);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.svCursor {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.hue {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: linear-gradient(
+    to right,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
+}
+
+.hue::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.hue::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.hexInput {
+  flex: 1;
+  padding: 5px 8px;
+  /* 触屏下的字号与最小高度，见 globals.css 里那段 --touch-input-* 的说明 */
+  font-size: var(--touch-input-font, 12px);
+  min-height: var(--touch-input-height, 0);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.hexInput:focus {
+  border-color: var(--accent-primary);
+}
+
+.preview {
+  width: 30px;
+  height: 26px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+
+.preset {
+  aspect-ratio: 1;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.preset:hover {
+  transform: scale(1.15);
+  border-color: #fff;
+}
+
+/* ---- 拾色器对话框 ---- */
+
+.dialogBody {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+/* 对话框里的色域面板给固定高度，避免被 flex 压扁 */
+.dialogBody .sv {
+  flex: 1;
+  height: 180px;
+}
+
+.dialogSide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 132px;
+}
+
+/* 竖排色相条。PS 的拾色器色相在色域右侧竖着放 */
+.hueVertical {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 180px;
+  padding: 0;
+  cursor: pointer;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    to bottom,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
+}
+
+.hueVertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 6px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.hueVertical::-moz-range-thumb {
+  width: 22px;
+  height: 6px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: transparent;
+}
+
+/* 新颜色 / 当前颜色对比 */
+.compare {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.compareLabel {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.compareChip {
+  flex: 1;
+  height: 24px;
+  border: 1px solid var(--border-light);
+}
+
+/* 用 flex 而不是 grid subgrid：subgrid 在 Safari 上支持太晚（CLAUDE.md 3.1） */
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* RGB 组与 hex 与上一组之间留出间距，视觉上分块 */
+.fieldGap {
+  margin-top: 6px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  min-width: 12px;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: var(--touch-input-font, 11px);
+  min-height: var(--touch-input-height, 0);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.fieldInput:focus {
+  border-color: var(--accent-primary);
+}
+
+.fieldSuffix {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+/* 把「颜色库」按钮推到左边，确定/取消留在右边（PS 的按钮分布） */
+.footerSpacer {
+  flex: 1;
+}
+
+/* ---- 颜色库视图 ---- */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/*
+ * 色块区限高并允许纵向滚动：Web 安全色有 216 个，
+ * 不限高的话对话框会长到超出视口，确定按钮被顶到屏幕外面点不到。
+ */
+.libraryRows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/*
+ * 一行色块。用 flex-wrap 而不是固定列数的 grid：
+ * 各色库每行数量不同（CSS 命名色按色相分行，12~25 个不等），
+ * 固定列数会把长行截断或把短行拉散。
+ */
+.libraryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.libSwatch {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.libSwatch:hover {
+  transform: scale(1.15);
+  border-color: #fff;
+}
+
+.libSwatch:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+/* 选中态用双层描边，浅色和深色色块上都看得见 */
+.libSwatchOn {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+/* ---- 色库导入 ---- */
+
+.libraryActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/*
+ * 原生 file input 各家样式差别太大，没法和其他控件统一，
+ * 所以藏起来由按钮触发。用 clip 而不是 display:none —— 后者在部分
+ * 浏览器上会让 input 失去可编程点击能力。
+ */
+.hiddenFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.importButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 12px;
+  min-height: var(--touch-input-height, 0);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.importButton:hover {
+  border-color: var(--accent-primary);
+}
+
+.importButton:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.libraryHint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}

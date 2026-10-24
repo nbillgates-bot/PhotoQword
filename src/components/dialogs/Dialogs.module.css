@@ -1,0 +1,273 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* 色阶的「输入色阶 / 输出色阶」小标题。不复用 .groupTitle：
+   那个带 grid-column，是给快捷键表的网格用的 */
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.histogram,
+.curveCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--bg-inset, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm, 3px);
+}
+
+.curveCanvas {
+  aspect-ratio: 1;
+  cursor: crosshair;
+  touch-action: none; /* 否则触屏拖控制点会连带滚动页面 */
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.input {
+  width: 100%;
+  padding: 6px 8px;
+  /* 触屏下的字号与最小高度，见 globals.css 里那段 --touch-input-* 的说明 */
+  font-size: var(--touch-input-font, 13px);
+  min-height: var(--touch-input-height, 0);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+/* 画布大小的九宫格锚点选择器 */
+.anchorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  grid-template-rows: repeat(3, 32px);
+  gap: 3px;
+  justify-content: center;
+}
+
+.anchorCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.anchorCell:hover {
+  background: var(--bg-hover);
+}
+
+.anchorActive {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+
+/* 滤镜库网格 */
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.filterCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-sm);
+  font-size: 11px;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.filterCard:hover {
+  border-color: var(--accent-primary);
+}
+
+.filterThumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+}
+
+/* 快捷键表 */
+.shortcutList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px var(--spacing-lg);
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.keys {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.groupTitle {
+  grid-column: 1 / -1;
+  margin-top: var(--spacing-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-primary);
+}
+
+.about {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.aboutLogo {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent-primary);
+}
+
+/* 图层样式对话框：左侧效果列表 + 右侧参数区，布局对齐 PS */
+.layerStyleBody {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: var(--spacing-md);
+  min-height: 300px;
+}
+
+.effectList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: var(--spacing-sm);
+  border-right: 1px solid var(--border-color);
+}
+
+.effectRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.effectRowActive {
+  background: var(--bg-tertiary);
+}
+
+.effectName {
+  flex: 1;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: var(--text-primary);
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.effectName:hover {
+  color: var(--accent-primary);
+}
+
+.effectParams {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.effectTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.effectFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.effectColorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.effectFieldLabel {
+  min-width: 72px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.effectHint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+}

@@ -1,0 +1,162 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+/*
+ * 文字编辑器：容器 + textarea + 边界框（段落文本）+ 调整手柄。
+ *
+ * 容器负责定位和尺寸，textarea 填满容器。段落文本显示边界框和手柄。
+ */
+
+/* 编辑器容器，定位在文档坐标 (x, y) */
+.container {
+  position: absolute;
+  z-index: 100;
+}
+
+/* 段落文本的边界框：虚线矩形 */
+.boundingBox {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed var(--accent-primary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/*
+ * 文字编辑用的 textarea。
+ *
+ * 关键点是让 textarea 里的字和 renderText 画到 canvas 上的字落在同一位置：
+ * textarea 默认带 padding / border / 内边距，会把文字整体推开几像素，
+ * 于是提交前后文字会「跳」一下。所以这里把盒模型清零。
+ */
+.editor {
+  position: relative;
+  z-index: 0;
+
+  /*
+   * 必须是块级盒。
+   *
+   * textarea 默认 display:inline-block，而行内盒的水平位置受祖先的 text-align
+   * 支配 —— index.css 的 `#root` 上有 text-align:center（Vite 模板遗留）。
+   * 这个盒子的**布局宽**是文档像素，容器宽却是文档像素×缩放，于是缩放大于 1 时
+   * 容器比它宽，居中就把它右移了 宽×(缩放-1)/2：100% 时两者相等看不出来，
+   * 超过 100% 就明显偏右，编辑中的字和提交后的字对不上。
+   * 块级盒的位置只由容器内容边缘决定，与 text-align 无关。
+   */
+  display: block;
+
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+
+  /* 首行行盒顶端要对齐容器顶端，renderText 的 y=0 也是行盒顶端 */
+  vertical-align: top;
+  resize: none;
+
+  background: transparent;
+
+  /* 字体、颜色、对齐等由组件按 textData 内联指定，这里不写死 */
+  caret-color: var(--accent-primary);
+  min-width: 1ch;
+  min-height: 1em;
+}
+
+.editor::selection {
+  background: rgba(74, 158, 255, 0.35);
+}
+
+/*
+ * 字符级颜色的显示层，与 .editor 逐字重叠。
+ *
+ * 盒模型必须和 .editor 一模一样（padding/border/margin 全为 0、同样的
+ * box-sizing），差一个像素两层的字就错开、看起来像重影。
+ *
+ * 压在 textarea 上面：放下面会被选区高亮那块半透明蓝整块盖住，
+ * 一选中就看不出颜色了。pointer-events: none 让点击照旧落到 textarea 上。
+ */
+.colorOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  /* 与 .editor 对齐的盒模型 */
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+  vertical-align: top;
+  background: transparent;
+}
+
+/* 调整手柄：8 个方向，绝对定位在边界框四周 */
+.handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border: 1px solid var(--accent-primary);
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.handle:hover {
+  background: var(--accent-primary);
+}
+
+/* 四角手柄 */
+.handleNw {
+  left: -4px;
+  top: -4px;
+  cursor: nwse-resize;
+}
+
+.handleNe {
+  right: -4px;
+  top: -4px;
+  cursor: nesw-resize;
+}
+
+.handleSe {
+  right: -4px;
+  bottom: -4px;
+  cursor: nwse-resize;
+}
+
+.handleSw {
+  left: -4px;
+  bottom: -4px;
+  cursor: nesw-resize;
+}
+
+/* 四边中点手柄 */
+.handleN {
+  left: calc(50% - 4px);
+  top: -4px;
+  cursor: ns-resize;
+}
+
+.handleS {
+  left: calc(50% - 4px);
+  bottom: -4px;
+  cursor: ns-resize;
+}
+
+.handleE {
+  right: -4px;
+  top: calc(50% - 4px);
+  cursor: ew-resize;
+}
+
+.handleW {
+  left: -4px;
+  top: calc(50% - 4px);
+  cursor: ew-resize;
+}

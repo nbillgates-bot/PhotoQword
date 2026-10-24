@@ -1,0 +1,66 @@
+/*
+ * PhotoQword
+ *
+ * Copyright (c) 2026 Richard Tong
+ * Website: https://www.qword.com
+ * Email: nbillgates@gmail.com
+ */
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--spacing-md);
+  font-size: 11px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.item {
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/*
+ * 窄屏：文档名、尺寸、DPI、图层数、选区、坐标、工具、缩放这一串在 375px 上
+ * 装不下。改成横向可滑，一项不删 —— 隐藏信息就是删信息，而这些数字
+ * （尺寸、选区大小、坐标）在手机上照样是干活要看的。
+ *
+ * 断点与 WIDE_LAYOUT_QUERY 互为反面，见 MenuBar.module.css 的说明。
+ */
+@media (max-width: 819px) {
+  .statusBar {
+    padding: 0 var(--spacing-sm);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .statusBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .item,
+  .divider {
+    flex-shrink: 0;
+  }
+
+  /*
+   * 那个 flex:1 的占位在滚动容器里撑不出「左右分组」的效果，
+   * 反而会把右半边推到屏幕外。窄屏下收成一个固定间隔。
+   */
+  .spacer {
+    flex: 0 0 var(--spacing-md);
+  }
+}
