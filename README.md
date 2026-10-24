@@ -11,7 +11,9 @@
 🎨 **Online Editor:** [https://ps.qword.com](https://ps.qword.com)  
 📧 **Email:** nbillgates@gmail.com
 
-![PhotoQword Screenshot](docs/screenshot.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nbillgates-bot/PhotoQword/main/20261024084043.png" alt="PhotoQword Editor" width="1000"/>
+</p>
 <!-- Add a real 1280x640 screenshot of the editor UI in your repo's docs/ folder -->
 
 ---
